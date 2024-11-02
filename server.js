@@ -19,30 +19,55 @@ const db = mysql.createConnection({
 });
 
 // 连接到数据库
-db.connect(err => {
+db.connect((err) => {
     if (err) {
-        console.error('Error connecting to MySQL:', err);
-        return;
+      console.error('Database connection failed: ' + err.stack);
+      return;
     }
-    console.log('Connected to MySQL');
-});
-
-// 测试插入数据的路由
-app.post('/receive', (req, res) => {
-    const { buyerId, product1Quantity, product2Quantity, totalPrice } = req.body;
-
-    // 插入数据到 orders 表
-    const query = 'INSERT INTO orders (buyer_id, product1_quantity, product2_quantity, total_price) VALUES (?, ?, ?, ?)';
-    
-    db.query(query, [buyerId, product1Quantity, product2Quantity, totalPrice], (error, results) => {
-        if (error) {
-            console.error('Error inserting order:', error);
-            return res.status(500).json({ message: 'Error inserting order', error });
-        }
-        res.status(200).json({ message: 'Order received successfully!', results });
+    console.log('Connected to database.');
+  });
+  
+  // 获取订单信息的 API 端点
+  app.get('/api/order111', (req, res) => {
+    const query = 'SELECT * FROM order111'; // 确保表名与数据库中的一致
+  
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error fetching data: ' + err);
+        return res.status(500).send('Server error');
+      }
+      res.json(results); // 将结果以 JSON 格式返回
     });
-});
-
+  });
+  
+  // 更新订单状态的 API 端点
+  app.put('/api/order111/:id', (req, res) => {
+    const orderId = req.params.id; // 获取订单 ID
+    const { status } = req.body; // 从请求体获取新的状态
+  
+    // 允许状态值为 1、2 或 3
+    if (![1, 2, 3].includes(status)) {
+      return res.status(400).json({ message: '无效的状态' });
+    }
+  
+    db.query(
+      'UPDATE order111 SET status = ? WHERE id = ?',
+      [status, orderId],
+      (err, result) => {
+        if (err) {
+          console.error('Error updating status: ' + err);
+          return res.status(500).json({ error: err.message });
+        }
+  
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: '订单未找到' });
+        }
+  
+        res.status(200).json({ message: '状态更新成功' });
+      }
+    );
+  });
+  
 // 启动服务器
 app.listen(port, '0.0.0.0', () => { // 监听 0.0.0.0 地址
     console.log(`Server running at http://localhost:${port}`);
