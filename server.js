@@ -28,8 +28,8 @@ db.connect((err) => {
   });
   
   // 获取订单信息的 API 端点
-  app.get('/api/order111', (req, res) => {
-    const query = 'SELECT * FROM order111'; // 确保表名与数据库中的一致
+  app.get('/api/orders', (req, res) => {
+    const query = 'SELECT * FROM orders'; // 确保表名与数据库中的一致
   
     db.query(query, (err, results) => {
       if (err) {
@@ -41,7 +41,7 @@ db.connect((err) => {
   });
   
   // 更新订单状态的 API 端点
-  app.put('/api/order111/:id', (req, res) => {
+  app.put('/api/orders/:id', (req, res) => {
     const orderId = req.params.id; // 获取订单 ID
     const { status } = req.body; // 从请求体获取新的状态
   
@@ -51,7 +51,7 @@ db.connect((err) => {
     }
   
     db.query(
-      'UPDATE order111 SET status = ? WHERE id = ?',
+      'UPDATE orders SET status = ? WHERE id = ?',
       [status, orderId],
       (err, result) => {
         if (err) {
