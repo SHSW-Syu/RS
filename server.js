@@ -7,7 +7,10 @@ const app = express();
 const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默认端口
 
 // 使用中间件
-app.use(cors());
+app.use(cors({
+  origin: '*', // 允许所有来源
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
+}));
 app.use(bodyParser.json());
 
 // 创建 MySQL 连接
