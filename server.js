@@ -7,16 +7,7 @@ const app = express();
 const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默认端口
 
 // 使用中间件
-// CORS 配置
-const corsOptions = {
-  origin: '*', // 允许所有来源的请求，也可以指定特定的域名
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的 HTTP 方法
-  allowedHeaders: ['Content-Type'], // 允许的请求头
-  preflightContinue: false, // 不继续预检请求
-  optionsSuccessStatus: 204, // 对于预检请求返回 204 状态码
-};
-
-app.use(cors(corsOptions)); // 确保 CORS 中间件配置生效
+app.use(cors());
 app.use(bodyParser.json());
 
 // 创建 MySQL 连接
