@@ -10,11 +10,7 @@ const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默�
 app.use(cors({
   origin: '*', // 允许所有来源
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
-  allowedHeaders: ['Content-Type', 'Authorization'], // 允许的请求头
 }));
-
-// 处理 OPTIONS 请求，确保 CORS 头
-app.options('*', cors()); 
 app.use(bodyParser.json());
 
 // 创建 MySQL 连接
