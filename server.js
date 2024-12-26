@@ -8,9 +8,10 @@ const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默�
 
 // 使用中间件
 app.use(cors({
-  origin: '*', // 允许所有来源
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
-  allowedHeaders: ['Content-Type', 'Authorization'], // 允许的请求头
+  origin: 'http://localhost:3000', // 或使用环境变量
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // 处理 OPTIONS 请求，确保 CORS 头
