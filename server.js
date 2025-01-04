@@ -89,8 +89,8 @@ app.get('/api/analysis', (req, res) => {
   if (date !== 'all') {
     // 假设 date1 和 date2 是具体的日期范围，这里是示例
     const dateCondition = date === 'date1'
-      ? "timestamp BETWEEN '2025-01-04' AND '2025-01-05'"
-      : "timestamp BETWEEN '2025-01-05' AND '2025-01-06'";
+      ? "timestamp BETWEEN '2025-01-04 00:00:00' AND '2025-01-05 02:00:00'"
+      : "timestamp BETWEEN '2025-01-05 02:01:00' AND '2025-01-06 00:00:00'";
     whereClause += whereClause ? ` AND ${dateCondition}` : dateCondition;
   }
 
