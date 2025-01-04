@@ -73,45 +73,40 @@ app.put('/api/orders/:id', (req, res) => {
 
 // 数据分析 - 总订单数、总销量、总收入
 app.get('/api/analysis', (req, res) => {
-  const product = req.query.product || 'all'; // 获取查询参数，默认为 'all'
+  const { product = 'all', date = 'all' } = req.query;
 
-  let query = '';
-  
-  // 根据 product 参数选择不同的查询
+  // 初始化 WHERE 条件
+  let whereClause = '';
+
+  // 根据商品筛选条件
   if (product === 'product1') {
-    query = `
-      SELECT 
-        COUNT(*) AS totalOrders,
-        SUM(product1_quantity) AS totalSales,
-        SUM(total_price) AS totalRevenue,
-        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-        SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-      FROM orders
-      WHERE product1_quantity != 0
-    `;
+    whereClause += 'product1_quantity != 0';
   } else if (product === 'product2') {
-    query = `
-      SELECT 
-        COUNT(*) AS totalOrders,
-        SUM(product2_quantity) AS totalSales,
-        SUM(total_price) AS totalRevenue,
-        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-        SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-      FROM orders
-      WHERE product2_quantity != 0
-    `;
-  } else {
-    query = `
-      SELECT 
-        COUNT(*) AS totalOrders,
-        SUM(product1_quantity + product2_quantity) AS totalSales,
-        SUM(total_price) AS totalRevenue,
-        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-        SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-      FROM orders
-    `;
+    whereClause += 'product2_quantity != 0';
   }
 
+  // 根据日期筛选条件
+  if (date !== 'all') {
+    // 假设 date1 和 date2 是具体的日期范围，这里是示例
+    const dateCondition = date === 'date1'
+      ? "timestamp BETWEEN '2025-01-04' AND '2025-01-05'"
+      : "timestamp BETWEEN '2025-01-05' AND '2025-01-06'";
+    whereClause += whereClause ? ` AND ${dateCondition}` : dateCondition;
+  }
+
+  // 构建查询
+  const query = `
+    SELECT 
+      COUNT(*) AS totalOrders,
+      SUM(${product === 'product1' ? 'product1_quantity' : product === 'product2' ? 'product2_quantity' : 'product1_quantity + product2_quantity'}) AS totalSales,
+      SUM(total_price) AS totalRevenue,
+      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+    FROM orders
+    ${whereClause ? `WHERE ${whereClause}` : ''}
+  `;
+
+  // 执行查询
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching data:', err);
@@ -137,7 +132,6 @@ app.get('/api/analysis', (req, res) => {
     });
   });
 });
-
 
 
 // 启动服务器
