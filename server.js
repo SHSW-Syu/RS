@@ -100,6 +100,8 @@ app.get('/api/analysis', (req, res) => {
       COUNT(*) AS totalOrders,
       SUM(${product === 'product1' ? 'product1_quantity' : product === 'product2' ? 'product2_quantity' : 'product1_quantity + product2_quantity'}) AS totalSales,
       SUM(total_price) AS totalRevenue,
+      SUM(CASE WHEN status != 3 THEN 1 ELSE 0 END) AS badDebtOrders,
+      (SUM(CASE WHEN status != 3 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)) * 100 AS badDebtRate,
       SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
       SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
     FROM orders
