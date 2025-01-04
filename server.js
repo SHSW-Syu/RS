@@ -73,16 +73,45 @@ app.put('/api/orders/:id', (req, res) => {
 
 // 数据分析 - 总订单数、总销量、总收入
 app.get('/api/analysis', (req, res) => {
-  const query = `
-    SELECT 
-      COUNT(*) AS totalOrders,
-      SUM(product1_quantity + product2_quantity) AS totalSales,
-      SUM(total_price) AS totalRevenue,
-      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-    FROM orders
-  `;
+  const product = req.query.product || 'all'; // 获取查询参数，默认为 'all'
+
+  let query = '';
   
+  // 根据 product 参数选择不同的查询
+  if (product === 'product1') {
+    query = `
+      SELECT 
+        COUNT(*) AS totalOrders,
+        SUM(product1_quantity) AS totalSales,
+        SUM(total_price) AS totalRevenue,
+        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+        SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+      FROM orders
+      WHERE product1_quantity != 0
+    `;
+  } else if (product === 'product2') {
+    query = `
+      SELECT 
+        COUNT(*) AS totalOrders,
+        SUM(product2_quantity) AS totalSales,
+        SUM(total_price) AS totalRevenue,
+        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+        SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+      FROM orders
+      WHERE product2_quantity != 0
+    `;
+  } else {
+    query = `
+      SELECT 
+        COUNT(*) AS totalOrders,
+        SUM(product1_quantity + product2_quantity) AS totalSales,
+        SUM(total_price) AS totalRevenue,
+        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+        SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+      FROM orders
+    `;
+  }
+
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching data:', err);
@@ -108,81 +137,7 @@ app.get('/api/analysis', (req, res) => {
     });
   });
 });
-app.get('/api/analysis/product1', (req, res) => {
-  const query = `
-    SELECT 
-      COUNT(*) AS totalOrders,
-      SUM(product1_quantity) AS totalSales,
-      SUM(product2_quantity) AS totalSales2,
-      SUM(total_price) AS totalRevenue,
-      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-    FROM orders
-    WHERE product1_quantity != 0
-  `;
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching data:', err);
-      return res.status(500).send('Server error');
-    }
 
-    const totalOrders = results[0].totalOrders;
-    const cashierOrders = results[0].cashierOrders;
-    const mobileOrders = results[0].mobileOrders;
-
-    // 计算占比
-    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
-    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
-
-    res.json({
-      totalOrders,
-      totalSales: results[0].totalSales,
-      totalRevenue: results[0].totalRevenue,
-      cashierOrders,
-      mobileOrders,
-      cashierPercentage,
-      mobilePercentage,
-    });
-  });
-});
-app.get('/api/analysis/product2', (req, res) => {
-  const query = `
-    SELECT 
-      COUNT(*) AS totalOrders,
-      SUM(product2_quantity) AS totalSales,
-      SUM(total_price) AS totalRevenue,
-      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-    FROM orders
-    WHERE product2_quantity != 0
-  `;
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching data:', err);
-      return res.status(500).send('Server error');
-    }
-
-    const totalOrders = results[0].totalOrders;
-    const cashierOrders = results[0].cashierOrders;
-    const mobileOrders = results[0].mobileOrders;
-
-    // 计算占比
-    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
-    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
-
-    res.json({
-      totalOrders,
-      totalSales: results[0].totalSales,
-      totalRevenue: results[0].totalRevenue,
-      cashierOrders,
-      mobileOrders,
-      cashierPercentage,
-      mobilePercentage,
-    });
-  });
-});
 
 
 // 启动服务器
