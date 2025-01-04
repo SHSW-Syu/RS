@@ -8,8 +8,8 @@ const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默�
 
 // 使用中间件
 app.use(cors({
-    origin: '*', // 允许所有来源
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
+  origin: '*', // 允许所有来源
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
 }));
 app.use(bodyParser.json());
 
@@ -71,57 +71,31 @@ app.put('/api/orders/:id', (req, res) => {
     );
 });
 
-// 数据分析的 API 端点
-app.post('/api/analyze', (req, res) => {
-    const { dateRange, product } = req.body;
-
-    let query = 'SELECT ';
-    const params = [];
-
-    // 统计字段
-    query += `
-        SUM(total_price) AS total_revenue,
-        SUM(product1_quantity + product2_quantity) AS total_sales,
-        COUNT(*) AS total_orders,
-        SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashier_orders,
-        SUM(CASE WHEN cashier = 0 THEN 1 ELSE 0 END) AS mobile_orders
+// 数据分析 - 总订单数、总销量、总收入
+app.get('/api/summary', (req, res) => {
+    const query = `
+        SELECT 
+            COUNT(*) AS total_orders, 
+            SUM(product1_quantity + product2_quantity) AS total_sales, 
+            SUM(total_price) AS total_revenue 
+        FROM orders
     `;
 
-    // 条件筛选
-    query += ' FROM orders WHERE 1=1 ';
-
-    if (dateRange !== 'all') {
-        query += ' AND DATE(timestamp) = ? ';
-        params.push(dateRange);
-    }
-
-    if (product !== 'all') {
-        query += ` AND ${product}_quantity > 0 `;
-    }
-
-    db.query(query, params, (error, results) => {
-        if (error) {
-            console.error('Error analyzing data:', error);
-            return res.status(500).json({ message: 'Error analyzing data', error });
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching data: ' + err);
+            return res.status(500).json({ message: 'Server error', error: err });
         }
 
-        const analysis = results[0];
-        const cashierPercentage = (analysis.cashier_orders / analysis.total_orders) * 100;
-        const mobilePercentage = (analysis.mobile_orders / analysis.total_orders) * 100;
-
         res.status(200).json({
-            totalRevenue: analysis.total_revenue,
-            totalSales: analysis.total_sales,
-            totalOrders: analysis.total_orders,
-            cashierOrders: analysis.cashier_orders,
-            cashierPercentage: cashierPercentage.toFixed(2),
-            mobileOrders: analysis.mobile_orders,
-            mobilePercentage: mobilePercentage.toFixed(2),
+            totalOrders: results[0].total_orders,
+            totalSales: results[0].total_sales,
+            totalRevenue: results[0].total_revenue
         });
     });
 });
 
 // 启动服务器
-app.listen(port, '0.0.0.0', () => { // 监听 0.0.0.0 地址
+app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://localhost:${port}`);
 });
