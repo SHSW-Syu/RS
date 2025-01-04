@@ -79,7 +79,7 @@ app.get('/api/analysis', (req, res) => {
       SUM(product1_quantity + product2_quantity) AS totalSales,
       SUM(total_price) AS totalRevenue,
       SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-      SUM(CASE WHEN cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
     FROM orders
   `;
   
