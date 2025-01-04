@@ -108,6 +108,45 @@ app.get('/api/analysis', (req, res) => {
     });
   });
 });
+app.get('/api/analysis/product1', (req, res) => {
+  const query = `
+    SELECT 
+      COUNT(*) AS totalOrders1,
+      SUM(product1_quantity) AS totalSales1,
+      SUM(product2_quantity) AS totalSales2,
+      SUM(total_price) AS totalRevenue1,
+      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders1,
+      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders1
+    FROM orders
+    WHERE product1_quantity != 0
+  `;
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      return res.status(500).send('Server error');
+    }
+
+    const totalOrders1 = results[0].totalOrders1;
+    const cashierOrders1 = results[0].cashierOrders1;
+    const mobileOrders1 = results[0].mobileOrders1;
+
+    // 计算占比
+    const cashierPercentage1 = totalOrders1 === 0 ? 0 : (cashierOrders1 / totalOrders1) * 100;
+    const mobilePercentage1 = totalOrders1 === 0 ? 0 : (mobileOrders1 / totalOrders1) * 100;
+
+    res.json({
+      totalOrders1,
+      totalSales1: results[0].totalSales1,
+      totalRevenue1: results[0].totalRevenue1,
+      cashierOrders1,
+      mobileOrders1,
+      cashierPercentage1,
+      mobilePercentage1,
+    });
+  });
+});
+
 
 // 启动服务器
 app.listen(port, '0.0.0.0', () => {
