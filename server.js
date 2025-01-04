@@ -71,45 +71,7 @@ app.put('/api/orders/:id', (req, res) => {
   );
 });
 
-// 数据分析 - 总订单数、总销量、总收入
-app.get('/api/analysis', (req, res) => {
-  const query = `
-    SELECT 
-      COUNT(*) AS totalOrders,
-      SUM(product1_quantity + product2_quantity) AS totalSales,
-      SUM(total_price) AS totalRevenue,
-      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
-      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
-    FROM orders
-  `;
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching data:', err);
-      return res.status(500).send('Server error');
-    }
-
-    const totalOrders = results[0].totalOrders;
-    const cashierOrders = results[0].cashierOrders;
-    const mobileOrders = results[0].mobileOrders;
-
-    // 计算占比
-    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
-    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
-
-    res.json({
-      totalOrders,
-      totalSales: results[0].totalSales,
-      totalRevenue: results[0].totalRevenue,
-      cashierOrders,
-      mobileOrders,
-      cashierPercentage,
-      mobilePercentage,
-    });
-  });
-});
-
-// 根据商品分析的 API 端点
+// 数据分析 - 根据商品分析的 API 端点
 app.get('/api/analysis/product/:productId', (req, res) => {
   const productId = req.params.productId;
   const query = `
@@ -118,9 +80,10 @@ app.get('/api/analysis/product/:productId', (req, res) => {
       SUM(CASE WHEN product1_id = ? THEN product1_quantity ELSE 0 END) AS product1Quantity,
       SUM(CASE WHEN product2_id = ? THEN product2_quantity ELSE 0 END) AS product2Quantity
     FROM orders
+    WHERE product1_id = ? OR product2_id = ?
   `;
   
-  db.query(query, [productId, productId], (err, results) => {
+  db.query(query, [productId, productId, productId, productId], (err, results) => {
     if (err) {
       console.error('Error fetching data:', err);
       return res.status(500).send('Server error');
