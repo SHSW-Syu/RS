@@ -4,21 +4,21 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3003; // 使用 Railway 提供的端口或默认端口
+const port = process.env.PORT || 3003;
 
 // 使用中间件
 app.use(cors({
   origin: '*', // 允许所有来源
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 允许的请求方法
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 app.use(bodyParser.json());
 
 // 创建 MySQL 连接
 const db = mysql.createConnection({
-  host: process.env.DB_HOST, // 从环境变量读取
-  user: process.env.DB_USER, // 从环境变量读取
-  password: process.env.DB_PASSWORD, // 从环境变量读取
-  database: process.env.DB_NAME, // 从环境变量读取
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 // 连接到数据库
@@ -32,23 +32,22 @@ db.connect((err) => {
 
 // 获取订单信息的 API 端点
 app.get('/api/orders', (req, res) => {
-  const query = 'SELECT * FROM orders'; // 确保表名与数据库中的一致
+  const query = 'SELECT * FROM orders';
 
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching data: ' + err);
       return res.status(500).send('Server error');
     }
-    res.json(results); // 将结果以 JSON 格式返回
+    res.json(results);
   });
 });
 
 // 更新订单状态的 API 端点
 app.put('/api/orders/:id', (req, res) => {
-  const orderId = req.params.id; // 获取订单 ID
-  const { status } = req.body; // 从请求体获取新的状态
+  const orderId = req.params.id;
+  const { status } = req.body;
 
-  // 允许状态值为 1、2 或 3
   if (![1, 2, 3].includes(status)) {
     return res.status(400).json({ message: '无效的状态' });
   }
@@ -71,19 +70,20 @@ app.put('/api/orders/:id', (req, res) => {
   );
 });
 
-// 数据分析 - 根据商品分析的 API 端点
-app.get('/api/analysis/product/:productId', (req, res) => {
-  const productId = req.params.productId;
+// 全商品数据分析的 API 端点
+app.get('/api/analysis/all', (req, res) => {
   const query = `
     SELECT 
       COUNT(*) AS totalOrders,
-      SUM(CASE WHEN product1_id = ? THEN product1_quantity ELSE 0 END) AS product1Quantity,
-      SUM(CASE WHEN product2_id = ? THEN product2_quantity ELSE 0 END) AS product2Quantity
+      SUM(product1_quantity) AS totalProduct1,
+      SUM(product2_quantity) AS totalProduct2,
+      SUM(total_price) AS totalRevenue,
+      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+      SUM(CASE WHEN mobile = 1 THEN 1 ELSE 0 END) AS mobileOrders
     FROM orders
-    WHERE product1_id = ? OR product2_id = ?
   `;
-  
-  db.query(query, [productId, productId, productId, productId], (err, results) => {
+
+  db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching data:', err);
       return res.status(500).send('Server error');
@@ -91,8 +91,13 @@ app.get('/api/analysis/product/:productId', (req, res) => {
 
     res.json({
       totalOrders: results[0].totalOrders,
-      product1Quantity: results[0].product1Quantity,
-      product2Quantity: results[0].product2Quantity,
+      totalProduct1: results[0].totalProduct1,
+      totalProduct2: results[0].totalProduct2,
+      totalRevenue: results[0].totalRevenue,
+      cashierOrders: results[0].cashierOrders,
+      mobileOrders: results[0].mobileOrders,
+      cashierPercentage: (results[0].cashierOrders / results[0].totalOrders) * 100,
+      mobilePercentage: (results[0].mobileOrders / results[0].totalOrders) * 100,
     });
   });
 });
