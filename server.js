@@ -109,6 +109,52 @@ app.get('/api/analysis', (req, res) => {
   });
 });
 
+// 按商品查询数据分析 - 例如按商品1或商品2查询
+app.get('/api/analysis/:product', (req, res) => {
+  const { product } = req.params; // 获取请求的商品类型
+  if (product !== 'product1' && product !== 'product2') {
+    return res.status(400).json({ message: '无效的商品类型' });
+  }
+
+  const productColumn = product === 'product1' ? 'product1_quantity' : 'product2_quantity';
+  
+  const query = `
+    SELECT 
+      COUNT(*) AS totalOrders,
+      SUM(${productColumn}) AS totalSales,
+      SUM(total_price) AS totalRevenue,
+      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+    FROM orders
+    WHERE ${productColumn} > 0
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      return res.status(500).send('Server error');
+    }
+
+    const totalOrders = results[0].totalOrders;
+    const cashierOrders = results[0].cashierOrders;
+    const mobileOrders = results[0].mobileOrders;
+
+    // 计算占比
+    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
+    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
+
+    res.json({
+      totalOrders,
+      totalSales: results[0].totalSales,
+      totalRevenue: results[0].totalRevenue,
+      cashierOrders,
+      mobileOrders,
+      cashierPercentage,
+      mobilePercentage,
+    });
+  });
+});
+
 // 启动服务器
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://localhost:${port}`);
