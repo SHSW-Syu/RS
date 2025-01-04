@@ -111,12 +111,12 @@ app.get('/api/analysis', (req, res) => {
 app.get('/api/analysis/product1', (req, res) => {
   const query = `
     SELECT 
-      COUNT(*) AS totalOrders1,
-      SUM(product1_quantity) AS totalSales1,
+      COUNT(*) AS totalOrders,
+      SUM(product1_quantity) AS totalSales,
       SUM(product2_quantity) AS totalSales2,
-      SUM(total_price) AS totalRevenue1,
-      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders1,
-      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders1
+      SUM(total_price) AS totalRevenue,
+      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+      SUM(CASE WHEN cashier IS NULL OR cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
     FROM orders
     WHERE product1_quantity != 0
   `;
@@ -127,22 +127,22 @@ app.get('/api/analysis/product1', (req, res) => {
       return res.status(500).send('Server error');
     }
 
-    const totalOrders1 = results[0].totalOrders1;
-    const cashierOrders1 = results[0].cashierOrders1;
-    const mobileOrders1 = results[0].mobileOrders1;
+    const totalOrders = results[0].totalOrders;
+    const cashierOrders = results[0].cashierOrders;
+    const mobileOrders = results[0].mobileOrders;
 
     // 计算占比
-    const cashierPercentage1 = totalOrders1 === 0 ? 0 : (cashierOrders1 / totalOrders1) * 100;
-    const mobilePercentage1 = totalOrders1 === 0 ? 0 : (mobileOrders1 / totalOrders1) * 100;
+    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
+    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
 
     res.json({
-      totalOrders1,
-      totalSales1: results[0].totalSales1,
-      totalRevenue1: results[0].totalRevenue1,
-      cashierOrders1,
-      mobileOrders1,
-      cashierPercentage1,
-      mobilePercentage1,
+      totalOrders,
+      totalSales: results[0].totalSales,
+      totalRevenue: results[0].totalRevenue,
+      cashierOrders,
+      mobileOrders,
+      cashierPercentage,
+      mobilePercentage,
     });
   });
 });
