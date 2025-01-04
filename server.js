@@ -72,27 +72,41 @@ app.put('/api/orders/:id', (req, res) => {
 });
 
 // 数据分析 - 总订单数、总销量、总收入
-app.get('/api/summary', (req, res) => {
-    const query = `
-        SELECT 
-            COUNT(*) AS total_orders, 
-            SUM(product1_quantity + product2_quantity) AS total_sales, 
-            SUM(total_price) AS total_revenue 
-        FROM orders
-    `;
+app.get('/api/analysis', (req, res) => {
+  const query = `
+    SELECT 
+      COUNT(*) AS totalOrders,
+      SUM(product1_quantity + product2_quantity) AS totalSales,
+      SUM(total_price) AS totalRevenue,
+      SUM(CASE WHEN cashier = 1 THEN 1 ELSE 0 END) AS cashierOrders,
+      SUM(CASE WHEN cashier != 1 THEN 1 ELSE 0 END) AS mobileOrders
+    FROM orders
+  `;
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      return res.status(500).send('Server error');
+    }
 
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error fetching data: ' + err);
-            return res.status(500).json({ message: 'Server error', error: err });
-        }
+    const totalOrders = results[0].totalOrders;
+    const cashierOrders = results[0].cashierOrders;
+    const mobileOrders = results[0].mobileOrders;
 
-        res.status(200).json({
-            totalOrders: results[0].total_orders,
-            totalSales: results[0].total_sales,
-            totalRevenue: results[0].total_revenue
-        });
+    // 计算占比
+    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
+    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
+
+    res.json({
+      totalOrders,
+      totalSales: results[0].totalSales,
+      totalRevenue: results[0].totalRevenue,
+      cashierOrders,
+      mobileOrders,
+      cashierPercentage,
+      mobilePercentage,
     });
+  });
 });
 
 // 启动服务器
