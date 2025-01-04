@@ -131,6 +131,8 @@ app.get('/api/analysis', (req, res) => {
       mobileOrders,
       cashierPercentage,
       mobilePercentage,
+      badDebtOrders,
+      badDebtRate,
     });
   });
 });
