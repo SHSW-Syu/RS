@@ -77,6 +77,8 @@ app.get('/api/analysis', (req, res) => {
 
   // 初始化 WHERE 条件
   let whereClause = '';
+  let groupByClause = 'HOUR(timestamp)';
+
 
   // 根据商品筛选条件
   if (product === 'product1') {
@@ -106,6 +108,15 @@ app.get('/api/analysis', (req, res) => {
     FROM orders
     ${whereClause ? `WHERE ${whereClause}` : ''}
   `;
+  const hourlyQuery = `
+    SELECT 
+      HOUR(timestamp) AS hour,
+      COUNT(*) AS totalOrders
+    FROM orders
+    ${whereClause ? `WHERE ${whereClause}` : ''}
+    GROUP BY hour
+    ORDER BY hour ASC
+  `;
 
   // 执行查询
   db.query(query, (err, results) => {
@@ -114,26 +125,34 @@ app.get('/api/analysis', (req, res) => {
       return res.status(500).send('Server error');
     }
 
-    const totalOrders = results[0].totalOrders;
-    const cashierOrders = results[0].cashierOrders;
-    const mobileOrders = results[0].mobileOrders;
-    const badDebtOrders = results[0].badDebtOrders;
+    db.query(hourlyQuery, (err, hourlyResults) => {
+      if (err) {
+        console.error('Error fetching hourly data:', err);
+        return res.status(500).send('Server error');
+      }
 
-    // 计算占比
-    const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
-    const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
-    const badDebtRate = totalOrders === 0 ? 0 : (badDebtOrders / totalOrders) * 100;
+      const totalOrders = results[0].totalOrders;
+      const cashierOrders = results[0].cashierOrders;
+      const mobileOrders = results[0].mobileOrders;
+      const badDebtOrders = results[0].badDebtOrders;
 
-    res.json({
-      totalOrders,
-      totalSales: results[0].totalSales,
-      totalRevenue: results[0].totalRevenue,
-      cashierOrders,
-      mobileOrders,
-      cashierPercentage,
-      mobilePercentage,
-      badDebtOrders,
-      badDebtRate,
+      // 计算占比
+      const cashierPercentage = totalOrders === 0 ? 0 : (cashierOrders / totalOrders) * 100;
+      const mobilePercentage = totalOrders === 0 ? 0 : (mobileOrders / totalOrders) * 100;
+      const badDebtRate = totalOrders === 0 ? 0 : (badDebtOrders / totalOrders) * 100;
+
+      res.json({
+        totalOrders,
+        totalSales: results[0].totalSales,
+        totalRevenue: results[0].totalRevenue,
+        cashierOrders,
+        mobileOrders,
+        cashierPercentage,
+        mobilePercentage,
+        badDebtOrders,
+        badDebtRate,
+        hourlyData: hourlyResults,
+      });
     });
   });
 });
